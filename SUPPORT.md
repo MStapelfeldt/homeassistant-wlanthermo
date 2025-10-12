@@ -1,1 +1,1 @@
-Kein Support durch Repo-Inhaber. Bitte forken und PRs/Issues eigenständig pflegen.
+No support is provided by the repository owner. Please fork the repo and manage PRs/Issues yourselves.

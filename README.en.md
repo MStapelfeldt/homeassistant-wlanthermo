@@ -41,7 +41,19 @@
 - Settings → Devices & Services → **Add Integration** → **WLANThermo**.
 - Provide host/port; credentials if required.
 
-## Entities (overview)
-- **Pitmaster 1**: Mode, Channel, Profile, Setpoint, Manual Output (write via `/setpitmaster`), Sensor: **Pitmaster 1 Output**.
-- **Channels 1–12**: `<Name> Temperature`, `Channel X Temperature`, Alarm select, Sensor type select, Min/Max numbers.
-- **System**: RSSI, Battery Level, Battery Charging.
+## Screenshots
+
+**Setup dialog**  
+![Setup](docs/images/01-setup.jpg)
+
+**Channel control entities**  
+![Channel Settings](docs/images/02-channel-settings.jpg)
+
+**Pitmaster 1 settings**  
+![Pitmaster Settings](docs/images/03-pitmaster-settings.jpg)
+
+**Sensors (temperatures, output, RSSI, battery)**  
+![Sensors](docs/images/04-sensors.jpg)
+
+**Device page in Home Assistant**  
+![Integration](docs/images/05-integration.jpg)
