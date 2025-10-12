@@ -1,0 +1,31 @@
+{
+  "title": "WLANThermo (HTTP)",
+  "config": {
+    "step": {
+      "user": {
+        "title": "WLANThermo verbinden",
+        "description": "Gib die Verbindungsdaten zu deinem WLANThermo an.",
+        "data": {
+          "host": "Host/IP",
+          "port": "Port",
+          "base_path": "Pfadpr\u00e4fix",
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung fehlgeschlagen"
+    },
+    "abort": {}
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Abfrageintervall (Sekunden)"
+        }
+      }
+    }
+  }
+}

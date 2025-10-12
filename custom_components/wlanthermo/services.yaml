@@ -1,0 +1,52 @@
+
+set_channel:
+  name: Set channel
+  description: Setzt Parameter für einen WLANThermo-Kanal.
+  fields:
+    number:
+      required: true
+      selector: { number: { min: 1, max: 24, mode: box } }
+    name:
+      required: false
+      selector: { text: {} }
+    typ:
+      required: false
+      selector: { number: { min: 0, max: 99 } }
+    min:
+      required: false
+      selector: { number: { min: -30, max: 999.9, step: 0.1 } }
+    max:
+      required: false
+      selector: { number: { min: -30, max: 999.9, step: 0.1 } }
+    alarm:
+      required: false
+      selector: { select: { options: ['0','1','2','3'] } }
+    color:
+      required: false
+      selector: { text: {} }
+
+set_pitmaster:
+  name: Set pitmaster
+  description: Stellt Pitmaster-Modus und Werte.
+  fields:
+    id: { required: true, selector: { number: { min: 0, max: 3 } } }
+    typ: { required: true, selector: { select: { options: ['off','manual','auto'] } } }
+    value: { required: false, selector: { number: { min: 0, max: 100 } } }
+    set: { required: false, selector: { number: { min: 0, max: 400, step: 0.5 } } }
+    pid: { required: false, selector: { number: { min: 0, max: 10 } } }
+    channel: { required: false, selector: { number: { min: 1, max: 24 } } }
+
+set_system:
+  name: Set system
+  description: Schreibt ausgewählte Systemparameter.
+  fields:
+    language: { required: false, selector: { select: { options: ['de','en'] } } }
+    unit: { required: false, selector: { select: { options: ['C','F'] } } }
+    ap: { required: false, selector: { text: {} } }
+    host: { required: false, selector: { text: {} } }
+    autoupd: { required: false, selector: { boolean: {} } }
+    prerelease: { required: false, selector: { boolean: {} } }
+
+config_reset:
+  name: Config reset
+  description: Setzt die Gerätekonfiguration zurück (Vorsicht!).
