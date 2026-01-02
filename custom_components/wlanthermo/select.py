@@ -8,12 +8,7 @@ from .base_entity import BaseWLANThermoDeviceEntity
 def _pm_list(coordinator):
     return (coordinator.data.get("pitmaster") or {}).get("pm", []) or []
 
-def _pm1_device_id(coordinator):
-    pms = _pm_list(coordinator)
-    if not pms:
-        return None
-    pm = sorted(pms, key=lambda p: p.get("id", 9999))[0]
-    return pm.get("id")
+
 
 def _resolve_pm_by_device_id(coordinator, device_pm_id):
     for p in _pm_list(coordinator):
@@ -27,9 +22,19 @@ async def async_setup_entry(hass, entry, async_add_entities):
     device = data["device"]
 
     entities: List[SelectEntity] = []
-    entities.append(PitmasterModeSelect(coord, device))
-    entities.append(PitmasterChannelSelect(coord, device))
-    entities.append(PitmasterProfileSelect(coord, device))
+    model_version = entry.data.get("model_version", "Mini-V3")
+    pm_list = _pm_list(coord)
+    if model_version == "Mini-V2" and len(pm_list) >= 2:
+        entities.append(PitmasterModeSelect(coord, device, pm_id=pm_list[0].get("id", 0), label=1))
+        entities.append(PitmasterChannelSelect(coord, device, pm_id=pm_list[0].get("id", 0), label=1))
+        entities.append(PitmasterProfileSelect(coord, device, pm_id=pm_list[0].get("id", 0), label=1))
+        entities.append(PitmasterModeSelect(coord, device, pm_id=pm_list[1].get("id", 1), label=2))
+        entities.append(PitmasterChannelSelect(coord, device, pm_id=pm_list[1].get("id", 1), label=2))
+        entities.append(PitmasterProfileSelect(coord, device, pm_id=pm_list[1].get("id", 1), label=2))
+    else:
+        entities.append(PitmasterModeSelect(coord, device))
+        entities.append(PitmasterChannelSelect(coord, device))
+        entities.append(PitmasterProfileSelect(coord, device))
 
     sensors = ((coord.data.get("_settings") or {}).get("sensors") or [])
     for ch in coord.data.get("channel", []):
@@ -38,24 +43,24 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     async_add_entities(entities)
 
-class _BasePm1Select(BaseWLANThermoDeviceEntity, SelectEntity):
+
+class _BasePmSelect(BaseWLANThermoDeviceEntity, SelectEntity):
     _attr_has_entity_name = True
-    _label = 1
-    def __init__(self, coordinator, device):
+    def __init__(self, coordinator, device, pm_id=None, label=1):
         super().__init__(coordinator, device)
-        self._device_pm_id = _pm1_device_id(coordinator)
+        if pm_id is None:
+            pm_list = _pm_list(coordinator)
+            pm_id = pm_list[0].get("id") if pm_list else 1
+        self._device_pm_id = pm_id
+        self._label = label
     def _pm(self):
-        if self._device_pm_id is None:
-            self._device_pm_id = _pm1_device_id(self.coordinator)
-        if self._device_pm_id is None:
-            return None
         return _resolve_pm_by_device_id(self.coordinator, self._device_pm_id)
     @property
     def unique_id(self) -> str:
-        dev = self._device_pm_id if self._device_pm_id is not None else 1
+        dev = self._device_pm_id if self._device_pm_id is not None else self._label
         return f"{list(self.device_info['identifiers'])[0][1]}_pm{dev}_{self._uid_suffix}"
 
-class PitmasterModeSelect(_BasePm1Select):
+class PitmasterModeSelect(_BasePmSelect):
     _attr_name = "Pitmaster {pm} Mode"
     _uid_suffix = "mode"
     @property
@@ -84,7 +89,7 @@ class PitmasterModeSelect(_BasePm1Select):
         await api.set_pitmaster(payload)
         await coord.async_request_refresh()
 
-class PitmasterChannelSelect(_BasePm1Select):
+class PitmasterChannelSelect(_BasePmSelect):
     _attr_name = "Pitmaster {pm} Channel"
     _uid_suffix = "channel"
     @property
@@ -114,7 +119,7 @@ class PitmasterChannelSelect(_BasePm1Select):
         await api.set_pitmaster(payload)
         await coord.async_request_refresh()
 
-class PitmasterProfileSelect(_BasePm1Select):
+class PitmasterProfileSelect(_BasePmSelect):
     _attr_name = "Pitmaster {pm} Profile"
     _uid_suffix = "profile"
     @property

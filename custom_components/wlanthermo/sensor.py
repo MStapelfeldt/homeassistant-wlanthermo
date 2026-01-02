@@ -11,13 +11,6 @@ from .base_entity import BaseWLANThermoDeviceEntity
 def _pm_list(coordinator):
     return ((coordinator.data or {}).get("pitmaster") or {}).get("pm", []) or []
 
-def _pm1_device_id(coordinator):
-    pms = _pm_list(coordinator)
-    if not pms:
-        return None
-    pm = sorted(pms, key=lambda p: p.get("id", 9999))[0]
-    return pm.get("id")
-
 def _resolve_pm_by_device_id(coordinator, pm_id):
     for p in _pm_list(coordinator):
         if p.get("id") == pm_id:
@@ -35,13 +28,21 @@ async def async_setup_entry(hass, entry, async_add_entities):
         entities.append(ChannelTemperatureSensor(coord, device, ch_no))
         entities.append(ChannelTemperatureFixedNameSensor(coord, device, ch_no))
 
-    # Pitmaster output (PM1)
-    entities.append(PitmasterOutputSensor(coord, device))
+    # Pitmaster output sensors
+    model_version = entry.data.get("model_version", "Mini-V3")
+    pm_list = _pm_list(coord)
+    if model_version == "Mini-V2" and len(pm_list) >= 2:
+        entities.append(PitmasterOutputSensor(coord, device, pm_id=pm_list[0].get("id", 0), label=1))
+        entities.append(PitmasterOutputSensor(coord, device, pm_id=pm_list[1].get("id", 1), label=2))
+    else:
+        entities.append(PitmasterOutputSensor(coord, device))
 
     # System sensors
     entities.append(SystemRssiSensor(coord, device))
-    entities.append(SystemBatteryLevel(coord, device))
-    entities.append(SystemBatteryCharging(coord, device))
+    model_version = entry.data.get("model_version", "Mini-V3")
+    if model_version != "Mini-V2":
+        entities.append(SystemBatteryLevel(coord, device))
+        entities.append(SystemBatteryCharging(coord, device))
     async_add_entities(entities)
 
 class SystemRssiSensor(BaseWLANThermoDeviceEntity, SensorEntity):
@@ -115,7 +116,11 @@ class ChannelTemperatureSensor(BaseWLANThermoDeviceEntity, SensorEntity):
     def native_value(self):
         for ch in (self.coordinator.data or {}).get("channel", []):
             if ch.get("number") == self._ch:
-                return ch.get("temp")
+                temp = ch.get("temp")
+                connected = ch.get("connected", True)
+                if not connected or temp == 999.0:
+                    return None  # Home Assistant will treat as unavailable
+                return temp
         return None
 
 
@@ -139,27 +144,31 @@ class ChannelTemperatureFixedNameSensor(BaseWLANThermoDeviceEntity, SensorEntity
     def native_value(self):
         for ch in (self.coordinator.data or {}).get("channel", []):
             if ch.get("number") == self._ch:
-                return ch.get("temp")
+                temp = ch.get("temp")
+                connected = ch.get("connected", True)
+                if not connected or temp == 999.0:
+                    return None  # Home Assistant will treat as unavailable
+                return temp
         return None
 
 
 class PitmasterOutputSensor(BaseWLANThermoDeviceEntity, SensorEntity):
     _attr_has_entity_name = True
-    _attr_name = "Pitmaster 1 Output"
     _attr_icon = "mdi:gauge"
     _attr_native_unit_of_measurement = PERCENTAGE
-    def __init__(self, coordinator, device):
+    def __init__(self, coordinator, device, pm_id=None, label=1):
         super().__init__(coordinator, device)
-        self._pm_id = _pm1_device_id(coordinator)
+        if pm_id is None:
+            pm_list = _pm_list(coordinator)
+            pm_id = pm_list[0].get("id") if pm_list else 1
+        self._pm_id = pm_id
+        self._label = label
+        self._attr_name = f"Pitmaster {label} Output"
     def _pm(self):
-        if self._pm_id is None:
-            self._pm_id = _pm1_device_id(self.coordinator)
-        if self._pm_id is None:
-            return None
         return _resolve_pm_by_device_id(self.coordinator, self._pm_id)
     @property
     def unique_id(self) -> str:
-        dev = self._pm_id if self._pm_id is not None else 1
+        dev = self._pm_id if self._pm_id is not None else self._label
         return f"{list(self.device_info['identifiers'])[0][1]}_pm{dev}_output"
     @property
     def native_value(self):

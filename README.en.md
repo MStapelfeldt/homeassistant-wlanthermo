@@ -7,11 +7,11 @@
 ![Owner](https://img.shields.io/badge/code%20owner-@lemuba-purple)
 
 **Version:** 0.1.0  
-**Code Owner:** @lemuba  
+**Code Owner Main Repository:** @lemuba  
 **License:** MIT
 
 > **Attribution & Disclaimer**  
-> Created by **ChatGPT (Assistant)** for **@lemuba**.  
+> This is a **fork** of the original WLANThermo Home Assistant integration. 
 > **No support** is provided by the repository owner. Forks and community **development/bugfixes** are welcome.  
 > **No warranty/liability** — use at your own risk.
 

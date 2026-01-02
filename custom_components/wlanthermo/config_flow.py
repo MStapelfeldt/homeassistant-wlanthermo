@@ -6,7 +6,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
-from .const import DOMAIN, DEFAULT_PORT, DEFAULT_SCAN_INTERVAL, CONF_BASE_PATH, CONF_USERNAME, CONF_PASSWORD
+from .const import DOMAIN, DEFAULT_PORT, DEFAULT_SCAN_INTERVAL, CONF_BASE_PATH, CONF_USERNAME, CONF_PASSWORD, MODEL_OPTIONS
 from .api import WLANThermoApi
 
 class WLANThermoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -20,6 +20,7 @@ class WLANThermoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             base_path = user_input.get(CONF_BASE_PATH, "/")
             username = user_input.get(CONF_USERNAME)
             password = user_input.get(CONF_PASSWORD)
+            model_version = user_input.get("model_version", "Link V1")
             api = WLANThermoApi(host, port, base_path, username=username, password=password)
             try:
                 settings = await api.get_settings()
@@ -27,7 +28,10 @@ class WLANThermoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             else:
                 await api.close()
-                return self.async_create_entry(title=f"WLANThermo {settings.get('device',{}).get('serial','')}", data=user_input)
+                # Store model_version in the config entry data
+                entry_data = dict(user_input)
+                entry_data["model_version"] = model_version
+                return self.async_create_entry(title=f"WLANThermo {settings.get('device',{}).get('serial','')}", data=entry_data)
 
         schema = vol.Schema({
             vol.Required("host"): str,
@@ -35,6 +39,7 @@ class WLANThermoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional(CONF_BASE_PATH, default="/"): str,
             vol.Optional(CONF_USERNAME): str,
             vol.Optional(CONF_PASSWORD): str,
+            vol.Required("model_version", default="Mini-V3"): vol.In(MODEL_OPTIONS),
         })
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 

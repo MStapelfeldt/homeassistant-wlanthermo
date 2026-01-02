@@ -1,3 +1,10 @@
+# Model version options for config flow
+MODEL_OPTIONS = [
+	"Link V1",
+	"Mini-V2",
+	"Mini-V3",
+	"Nano V3"
+]
 
 DOMAIN = "wlanthermo"
 DEFAULT_PORT = 80

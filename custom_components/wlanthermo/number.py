@@ -8,13 +8,7 @@ from .base_entity import BaseWLANThermoDeviceEntity
 def _pm_list(coordinator):
     return (coordinator.data.get("pitmaster") or {}).get("pm", []) or []
 
-def _pm1_device_id(coordinator):
-    """Device id of Pitmaster 1 (smallest device id)."""
-    pms = _pm_list(coordinator)
-    if not pms:
-        return None
-    pm = sorted(pms, key=lambda p: p.get("id", 9999))[0]
-    return pm.get("id")
+
 
 def _resolve_pm_by_device_id(coordinator, device_pm_id):
     for p in _pm_list(coordinator):
@@ -28,9 +22,19 @@ async def async_setup_entry(hass, entry, async_add_entities):
     device = data["device"]
     entities: list[NumberEntity] = []
 
-    # Only Pitmaster 1 entities
-    entities.append(PitmasterSetpointNumber(coord, device))
-    entities.append(PitmasterManualValueNumber(coord, device))
+    # Pitmaster entities
+    model_version = entry.data.get("model_version", "Mini-V3")
+    pm_list = _pm_list(coord)
+    if model_version == "Mini-V2" and len(pm_list) >= 2:
+        # Add both pitmasters
+        entities.append(PitmasterSetpointNumber(coord, device, pm_id=pm_list[0].get("id", 0), label=1))
+        entities.append(PitmasterManualValueNumber(coord, device, pm_id=pm_list[0].get("id", 0), label=1))
+        entities.append(PitmasterSetpointNumber(coord, device, pm_id=pm_list[1].get("id", 1), label=2))
+        entities.append(PitmasterManualValueNumber(coord, device, pm_id=pm_list[1].get("id", 1), label=2))
+    else:
+        # Only Pitmaster 1
+        entities.append(PitmasterSetpointNumber(coord, device))
+        entities.append(PitmasterManualValueNumber(coord, device))
 
     # Channel min/max
     for ch in coord.data.get("channel", []):
@@ -39,27 +43,27 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     async_add_entities(entities)
 
-class _BasePm1Number(BaseWLANThermoDeviceEntity, NumberEntity):
+
+class _BasePmNumber(BaseWLANThermoDeviceEntity, NumberEntity):
     _attr_has_entity_name = True
-    _label = 1
-    def __init__(self, coordinator, device):
+    def __init__(self, coordinator, device, pm_id=None, label=1):
         super().__init__(coordinator, device)
-        self._device_pm_id = _pm1_device_id(coordinator)
+        if pm_id is None:
+            pm_list = _pm_list(coordinator)
+            pm_id = pm_list[0].get("id") if pm_list else 1
+        self._device_pm_id = pm_id
+        self._label = label
     def _pm(self):
-        if self._device_pm_id is None:
-            self._device_pm_id = _pm1_device_id(self.coordinator)
-        if self._device_pm_id is None:
-            return None
         return _resolve_pm_by_device_id(self.coordinator, self._device_pm_id)
     @property
     def unique_id(self) -> str:
-        dev = self._device_pm_id if self._device_pm_id is not None else 1
+        dev = self._device_pm_id if self._device_pm_id is not None else self._label
         return f"{list(self.device_info['identifiers'])[0][1]}_pm{dev}_{self._uid_suffix}"
     @property
     def name(self):
         return self._attr_name.format(pm=self._label)
 
-class PitmasterSetpointNumber(_BasePm1Number):
+class PitmasterSetpointNumber(_BasePmNumber):
     _attr_name = "Pitmaster {pm} Setpoint"
     _uid_suffix = "set"
     _attr_native_step = 0.5
@@ -87,7 +91,7 @@ class PitmasterSetpointNumber(_BasePm1Number):
         await api.set_pitmaster(payload)
         await coord.async_request_refresh()
 
-class PitmasterManualValueNumber(_BasePm1Number):
+class PitmasterManualValueNumber(_BasePmNumber):
     _attr_name = "Pitmaster {pm} Manual Output"
     _uid_suffix = "value"
     _attr_native_step = 1
