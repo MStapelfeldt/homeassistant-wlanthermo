@@ -1,8 +1,12 @@
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Iterable
+
+import logging
 from aiohttp import ClientSession, BasicAuth
 from yarl import URL
+
+_LOGGER = logging.getLogger(__name__)
 
 class WLANThermoApi:
     def __init__(self, host: str, port: int = 80, base_path: str = "/", *, username: Optional[str] = None, password: Optional[str] = None, verify_ssl: bool = True, timeout: int = 8) -> None:
@@ -66,9 +70,20 @@ class WLANThermoApi:
         paths = ("/setchannels", "/setchannels")
         return await self._try_write(paths, channel_obj, methods)
 
-    async def set_pitmaster(self, pm_obj: Dict[str, Any] | List[Dict[str, Any]], *, use_put: bool = True) -> bool:
+    async def set_pitmaster(self, pm_obj: Dict[str, Any] | List[Dict[str, Any]], *, use_put: bool = True, coordinator=None, model_version=None) -> bool:
         methods = ("PUT","POST") if use_put else ("POST","PUT")
         payload = pm_obj if isinstance(pm_obj, list) else [pm_obj]
+        # For Mini-V2, always send both pitmasters if available
+        if model_version == "Mini-V2" and coordinator is not None:
+            pm_list = ((coordinator.data or {}).get("pitmaster") or {}).get("pm", []) or []
+            pm_dict = {pm.get("id"): dict(pm) for pm in pm_list}
+            for p in payload:
+                pm_dict[p.get("id")] = dict(p)
+            payload = [pm_dict[k] for k in sorted(pm_dict.keys())]
+        # Only send the first/changed pitmaster for others
+        elif model_version != "Mini-V2":
+            payload = [payload[0]]
+        #_LOGGER.warning("[WLANThermoApi.set_pitmaster]  Model: %s Payload: %s", model_version, payload)
         paths = ("/setpitmaster", "/setpitmaster")
         return await self._try_write(paths, payload, methods)
 

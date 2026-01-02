@@ -86,7 +86,8 @@ class PitmasterModeSelect(_BasePmSelect):
             "typ": option
         }]
         api = self.hass.data[DOMAIN][coord.config_entry.entry_id]["api"]
-        await api.set_pitmaster(payload)
+        model_version = coord.config_entry.data.get("model_version")
+        await api.set_pitmaster(payload, coordinator=coord, model_version=model_version)
         await coord.async_request_refresh()
 
 class PitmasterChannelSelect(_BasePmSelect):
@@ -116,7 +117,8 @@ class PitmasterChannelSelect(_BasePmSelect):
             "typ": pm.get("typ", "auto")
         }]
         api = self.hass.data[DOMAIN][coord.config_entry.entry_id]["api"]
-        await api.set_pitmaster(payload)
+        model_version = coord.config_entry.data.get("model_version")
+        await api.set_pitmaster(payload, coordinator=coord, model_version=model_version)
         await coord.async_request_refresh()
 
 class PitmasterProfileSelect(_BasePmSelect):
@@ -157,7 +159,8 @@ class PitmasterProfileSelect(_BasePmSelect):
             "typ": pm.get("typ", "auto")
         }]
         api = self.hass.data[DOMAIN][coord.config_entry.entry_id]["api"]
-        await api.set_pitmaster(payload)
+        model_version = coord.config_entry.data.get("model_version")
+        await api.set_pitmaster(payload, coordinator=coord, model_version=model_version)
         await coord.async_request_refresh()
 
 class ChannelTypeSelect(BaseWLANThermoDeviceEntity, SelectEntity):
