@@ -5,7 +5,8 @@
   "domains": [
     "sensor",
     "select",
-    "number"
+    "number",
+    "wlanthermo_bbq"
   ],
   "country": [
     "DE"
