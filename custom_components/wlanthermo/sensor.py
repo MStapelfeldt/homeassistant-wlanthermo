@@ -117,8 +117,7 @@ class ChannelTemperatureSensor(BaseWLANThermoDeviceEntity, SensorEntity):
         for ch in (self.coordinator.data or {}).get("channel", []):
             if ch.get("number") == self._ch:
                 temp = ch.get("temp")
-                connected = ch.get("connected", True)
-                if not connected or temp == 999.0:
+                if temp == 999.0:
                     return None  # Home Assistant will treat as unavailable
                 return temp
         return None
@@ -145,8 +144,7 @@ class ChannelTemperatureFixedNameSensor(BaseWLANThermoDeviceEntity, SensorEntity
         for ch in (self.coordinator.data or {}).get("channel", []):
             if ch.get("number") == self._ch:
                 temp = ch.get("temp")
-                connected = ch.get("connected", True)
-                if not connected or temp == 999.0:
+                if temp == 999.0:
                     return None  # Home Assistant will treat as unavailable
                 return temp
         return None
@@ -176,3 +174,4 @@ class PitmasterOutputSensor(BaseWLANThermoDeviceEntity, SensorEntity):
         if pm is None:
             return None
         return pm.get("value")
+    
